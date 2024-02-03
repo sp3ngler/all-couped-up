@@ -12,18 +12,33 @@ In a Node.js application, app.js typically includes the following responsibiliti
 
 const express = require('express');
 const app = express();
+const path = require('path');
+
+/*wrapping express inside a http server 
+so we can use the express functionality*/
+const http = require('http')
+const server = http.createServer(app)
+/*socket.io set up */
+const { Server } = require('socket.io')
+const io = new Server(server) 
 const port = 3000;
 
 // Middleware to parse incoming JSON requests
-app.use(express.static('public'));
+app.use(express.static('src'));
 
 // Route definition
 app.get('/', (req, res) => {
-  res.send('Hello, World!');
+  res.sendFile('/Users/mac/Desktop/hopperhack/all-couped-up/src/frontend/mainMenu.html');
 });
 
+//receive connection from frontend 
+io.on('connection', (socket) => {
+    console.log('a user has connected')
+})
+
 // Start the server
-app.listen(port, () => {
+server.listen(port, () => {
   console.log(`Server listening at http://localhost:${port}`);
 });
 
+console.log('server is loaded')
