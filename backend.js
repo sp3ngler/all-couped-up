@@ -29,30 +29,37 @@ function randomizeHand(PL) {
     deck.splice(randomTwo, 1);
 }
 
-  //helper function for foreignAid function
-function isChallengedByDuck() {
-    return new Promise((resolve, reject) => {
-        let isChallenged = false;
-        io.on("challengedByDuck", (socket) => {
-          isChallenged = true;
-          resolve(socket, isChallenged) //which player is duck
-        })
-        setTimeout(() => resolve(isChallenged), 20000)
-    })
-  }
+function del(key){
+    if(this.hasKey(key)){
+        delete this.container[key];
+        return true;
+    }
+    return false;
+}
 
-  const backEndPlayers = {}
+let backEndPlayers = {
+    "Adam": {
+        id: "Adam",
+        cardCounter: 2,
+        numCoins: 10,
+        cardOne: "Yo",
+        cardTwo: "Bye",
+        username: ""
+    }
+}
 
-  const capacity = 0
+
+  var capacity = 0
   if(capacity <= 4){
     io.on('connection', (socket) => {
         console.log('user ' + socket.id + ' connected')
     
         io.emit('updatePlayers', backEndPlayers)
     
-        //socket.on('initGame', (username) => {
+        // socket.on('setUsername', (username) => {
             backEndPlayers[socket.id] = {
                     id: socket.id,
+                    cardCounter: 2,
                     numCoins: 2,
                     cardOne: "",
                     cardTwo: "",
@@ -60,6 +67,7 @@ function isChallengedByDuck() {
             }
 
             randomizeHand(backEndPlayers[socket.id])
+            capacity++
         //})
 
             //"income" 
@@ -67,17 +75,74 @@ function isChallengedByDuck() {
                 backEndPlayers[id].numCoins++;
             })
             
-            //"foreign aid"
-            socket.on("foreignAid", async(socket) => {
-            try{
+            //foreign aid
+            socket.on("foreignAid", async(key) => {
+                console.log("foreignAid triggered")
+                try{
                 var result = await isChallengedByDuck();
-                if(!result.isChallenged){
-                    backEndPlayers[socket.id].numCoins += 2;
-            }
-            }catch(err){
-                console.log("something went wrong")
-            }
+                console.log("InFA" + result)
+                if(!result){
+                    players[key].coins += 2;
+                }
+                console.log(players[key]);
+                }catch(err){
+                console.log(err)
+                }
             })
+  
+            //helper function for foreignAid function
+            var isChallengedByDuck = () => {
+                return new Promise(function(resolve, reject) {
+                    socket.on("challengedByDuck", (isChallenged) => {
+        
+                    resolve(isChallenged) //which player is duck
+                    })
+                    setTimeout(() => resolve(isChallenged), 20000)
+                })
+            }
+
+            //"coup"
+            socket.on("coup", async(Sender, Target) => {
+                console.log("In CODE COUP RN")
+                if(backEndPlayers[Sender].numCoins < 7)
+                {
+                    socket.emit('not enough')
+                }   
+                else{
+                    backEndPlayers[Sender].numCoins -= 7
+                if(backEndPlayers[Target].cardCounter == 1){
+                    backEndPlayers.del(Target)
+                    backEndPlayers[Target].cardCounter--;
+                }
+                else if(backEndPlayers[Target].cardCounter == 2){
+                    try{
+                        console.log("In Try Ctrach")
+                        var result = await chooseCard();
+                        console.log("await: " + result)
+                        if(result == 1 && backEndPlayers[Target].cardOne != 'X'){
+                            backEndPlayers[Target].cardOne = 'X'
+                            backEndPlayers[Target].cardCounter--;
+                        }
+                        else{
+                            backEndPlayers[Target].cardTwo = 'X'
+                            backEndPlayers[Target].cardCounter--;
+                        }
+                    }catch(err){
+                        console.log(err)
+                    }
+                    }
+                }
+            })
+
+            var chooseCard = () => {
+                return new Promise(function(resolve, reject) {
+                    socket.on("chooseCard", (card) => {
+        
+                    resolve(card) //which card gets deleted
+                    })
+                    setTimeout(() => resolve(1), 20000)
+                })
+            }
     
         // socket.on('disconnect', (reason) => {
         //     console.log(reason)

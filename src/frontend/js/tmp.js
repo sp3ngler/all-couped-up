@@ -17,7 +17,9 @@ const players = {}
 socket.on('updatePlayers', (backendPlayers) =>{
   for (const id in backendPlayers){
     const backendPlayer = backendPlayers[id]
-    socket.emit('income', id)
+    //socket.emit('income', id)
+    socket.emit('coup', id, "Adam")
+    socket.emit('chooseCard', 2)
 
     if (!players[id]) {
       players[id] = new Player(backendPlayer.x, backendPlayer.y, 10, 'white')
