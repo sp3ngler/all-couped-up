@@ -12,18 +12,70 @@ In a Node.js application, app.js typically includes the following responsibiliti
 
 const express = require('express');
 const app = express();
+
+//socket.io setup
+const http = require('http');
+const server = http.createServer(app);
+const { Server } = require('socket.io');
+const io = new Server(server, { pingInterval: 2000, pingTimeout: 5000});
+
 const port = 3000;
 
-// Middleware to parse incoming JSON requests
-app.use(express.static('public'));
+// app.use(express.static('public'));
+app.use(express.static('src'));
 
-// Route definition
+
 app.get('/', (req, res) => {
-  res.send('Hello, World!');
+    res.sendFile(__dirname + '/src/frontend/tmp.html');
+  });
+
+const players = [];
+let deck = ["Duke", "Assassin", "Ambassador", "Captain", "Contessa", "Duke", "Assassin", "Ambassador", "Captain", "Contessa", "Duke", "Assassin", "Ambassador", "Captain", "Contessa"];
+let actions = [""];
+function randomizeHand(PL) {
+    let randomOne = Math.floor(Math.random() * cards.length);
+    PL.cardOne = deck[randomOne];
+    deck.splice(randomOne, 1);
+    let randomTwo = Math.floor(Math.random() * cards.length);    
+    PL.cardTwo = deck[randomTwo];
+    deck.splice(randomOne, 1);
+}
+
+function checkActions(PL) {
+    if (PL.cardOne == "Assassin")
+}
+
+io.on('connection', (socket) => {
+    console.log('a user connected')
+
+    if (players.length <= 4) {
+        let player = new Player(socket.id);
+        randomizeHand(player);
+        players.push(player);
+    }
+
+    io.emit('updatePlayers', players)
+
+
+    socket.on('turn start', ())
+
+    socket.on('turn end', ())
+
+    socket.on('disconnect', (reason) => {
+        console.log(reason)
+        delete players[socket.id]
+        io.emit('updatePlayers', players)
+    })
+
+    console.log(players)
+
+    socket.on('')
+
 });
 
-// Start the server
-app.listen(port, () => {
-  console.log(`Server listening at http://localhost:${port}`);
+
+server.listen(port, () => {
+    console.log(`Coup listening on port ${port}`);
 });
 
+console.log('server did not load')
