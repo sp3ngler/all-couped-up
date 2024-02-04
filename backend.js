@@ -29,14 +29,6 @@ function randomizeHand(PL) {
     deck.splice(randomTwo, 1);
 }
 
-function del(key){
-    if(this.hasKey(key)){
-        delete this.container[key];
-        return true;
-    }
-    return false;
-}
-
 let backEndPlayers = {
     "Adam": {
         id: "Adam",
@@ -109,15 +101,16 @@ let backEndPlayers = {
                     socket.emit('not enough')
                 }   
                 else{
-                    backEndPlayers[Sender].numCoins -= 7
+                    //backEndPlayers[Sender].numCoins -= 7
                 if(backEndPlayers[Target].cardCounter == 1){
-                    backEndPlayers.del(Target)
                     backEndPlayers[Target].cardCounter--;
+                    delete backEndPlayers[Target]
+                    
                 }
                 else if(backEndPlayers[Target].cardCounter == 2){
                     try{
                         console.log("In Try Ctrach")
-                        var result = await chooseCard();
+                        var result = await chooseCard(Target);
                         console.log("await: " + result)
                         if(result == 1 && backEndPlayers[Target].cardOne != 'X'){
                             backEndPlayers[Target].cardOne = 'X'
@@ -134,11 +127,20 @@ let backEndPlayers = {
                 }
             })
 
-            var chooseCard = () => {
+            // function del(key){
+            //     if(key in backEndPlayers){
+            //         backEndPlayers.delete(key);
+            //         return true;
+            //     }
+            //     return false;
+            // }
+
+            var chooseCard = (Target) => {
                 return new Promise(function(resolve, reject) {
-                    socket.on("chooseCard", (card) => {
-        
-                    resolve(card) //which card gets deleted
+                    socket.emit('chooseCard', Target)
+                    
+                    socket.on('getCard', (card) => {
+                        resolve(card) //which card gets deleted
                     })
                     setTimeout(() => resolve(1), 20000)
                 })

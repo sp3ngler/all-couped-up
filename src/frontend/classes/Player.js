@@ -7,12 +7,4 @@ class Player {
       this.cardTwo = "";
       this.username = username;
     }
-
-    setCardOne(dead){
-      this.cardOne = "X"
-    }
-
-    setCardTwo(dead){
-      this.cardTwo = "X"
-    }
   }
