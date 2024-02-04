@@ -31,9 +31,117 @@ app.get('/', (req, res) => {
   res.sendFile('/Users/mac/Desktop/hopperhack/all-couped-up/src/frontend/mainMenu.html');
 });
 
+
+var players = {}
+var deck = ["Duck", "Assassin", "Ambassador", 
+              "Captain", "Contessa", "Duck", 
+              "Assassin", "Ambassador", "Captain", 
+              "Contessa", "Duck", "Assassin", "Ambassador", 
+              "Captain", "Contessa"];
+function randomizeHand(PL) {
+    let randomOne = Math.floor(Math.random() * deck.length);
+    PL.cardOne = deck[randomOne];
+    deck.splice(randomOne, 1);
+    let randomTwo = Math.floor(Math.random() * deck.length);    
+    PL.cardTwo = deck[randomTwo];
+    deck.splice(randomTwo, 1);
+}
+
 //receive connection from frontend 
 io.on('connection', (socket) => {
     console.log('a user has connected')
+    if(!(socket.id in players)){
+      
+      console.log('update player')
+      players[socket.id] =  {
+        id: socket.id,
+        coins: 2,
+        cardOne: "",
+        cardTwo: ""
+      }
+      randomizeHand(players[socket.id]);
+      socket.emit("updatePlayers", players);
+    }
+
+    //income
+    socket.on('income', (key) => {
+      console.log("income triggered")
+      players[key].coins++;
+      console.log(players[key]);
+    })
+
+    //foreign aid
+    socket.on("foreignAid", async(key) => {
+      console.log("foreignAid triggered")
+      try{
+        var result = await isChallengedByDuck();
+        console.log("InFA" + result)
+        if(!result){ //no one blocked the action
+          players[key].coins += 2;
+        }else{ //someone blocked the action
+          var result2 = await isIdentityChanllenged(); //question identity
+          if(result2.isChallenged){
+            //guessed wrong
+              if(players[result2.target].cardOne != "Duck" && players[result2.target].cardTwo != "Duck"){
+                socket.emit("chooseCard-ask", sender);
+                var response = await chooseCard_response();
+                if(response == 1){
+                  players[sender].cardOne = 'X';
+                }else if(response ==2){
+                  players[sender].cardTwo = 'X';
+                }
+              }else{ //guessed right
+                socket.emit("chooseCard-ask", target)
+                var response = await chooseCard_response();
+                if(response == 1){
+                  players[target].cardOne = 'X';
+                }else if(response ==2){
+                  players[target].cardTwo = 'X';
+                }  
+              }
+          }
+        }
+        console.log(players[key]);
+      }catch(err){
+        console.log(err)
+      }
+    })
+
+    //helper function for foreignAid function
+    var isChallengedByDuck = () => {
+      return new Promise(function(resolve, reject) {
+          socket.on("challengedByDuck", (isChallenged) => {
+            resolve(isChallenged) //which player is duck
+          })
+          setTimeout(() => resolve(false), 20000)
+      })
+    }
+
+    /*isIdentityChanllenged: determine if any players challenge 
+    the current player (return: boolean)*/
+    var isIdentityChanllenged = () => {
+      return new Promise(function(resolve, reject) {
+        socket.on('identityChallenged', (isChallenged, sender, target)=>{
+          if(isChallenged){
+            resolve({isChallenged, sender, target})
+          }else{
+            resolve(isChallenged)
+          }
+        })
+        setTimeout(() => resolve(false), 20000)
+      })
+    }
+
+    var chooseCard_response = () => {
+      return new Promise((resolve, reject) => {
+        socket.on("chooseCard-response", (response)=>{
+          resolve(response)
+        })
+        setTimeout(()=> resolve(1), 5000)
+      })
+    }
+
+
 })
 
 // Start the server
@@ -42,3 +150,4 @@ server.listen(port, () => {
 });
 
 console.log('server is loaded')
+
