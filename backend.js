@@ -17,31 +17,81 @@ app.get('/', (req, res) => {
     res.sendFile(__dirname + '/src/frontend/tmp.html');
   });
 
-const backEndPlayers = {}
+const playerArray = [];
+let deck = ["Duke", "Assassin", "Ambassador", "Captain", "Contessa", "Duke", "Assassin", "Ambassador", "Captain", "Contessa", "Duke", "Assassin", "Ambassador", "Captain", "Contessa"];
+let actions = [""];
+function randomizeHand(PL) {
+    let randomOne = Math.floor(Math.random() * deck.length);
+    PL.cardOne = deck[randomOne];
+    deck.splice(randomOne, 1);
+    let randomTwo = Math.floor(Math.random() * deck.length);    
+    PL.cardTwo = deck[randomTwo];
+    deck.splice(randomTwo, 1);
+}
 
-const capacity = 0
-io.on('connection', (socket) => {
-    console.log('user ' + socket.id + ' connected')
-
-    io.emit('updatePlayers', backEndPlayers)
-
-    socket.on('initGame', (username) => {
-        console.log(username)
-        backEndPlayers[socket.id] = {
-            x: 500 * Math.random(),
-            y: 500 * Math.random(),
-            username
-        }
+  //helper function for foreignAid function
+function isChallengedByDuck() {
+    return new Promise((resolve, reject) => {
+        let isChallenged = false;
+        io.on("challengedByDuck", (socket) => {
+          isChallenged = true;
+          resolve(socket, isChallenged) //which player is duck
+        })
+        setTimeout(() => resolve(isChallenged), 20000)
     })
+  }
 
-    socket.on('disconnect', (reason) => {
-        console.log(reason)
-        delete backEndPlayers[socket.id]
+  const backEndPlayers = {}
+
+  const capacity = 0
+  if(capacity <= 4){
+    io.on('connection', (socket) => {
+        console.log('user ' + socket.id + ' connected')
+    
         io.emit('updatePlayers', backEndPlayers)
-    })
+    
+        //socket.on('initGame', (username) => {
+            backEndPlayers[socket.id] = {
+                    id: socket.id,
+                    numCoins: 2,
+                    cardOne: "",
+                    cardTwo: "",
+                    username: ""
+            }
 
-    console.log(backEndPlayers)
-});
+            randomizeHand(backEndPlayers[socket.id])
+        //})
+
+            //"income" 
+            socket.on('income', (id) => {
+                backEndPlayers[id].numCoins++;
+            })
+            
+            //"foreign aid"
+            socket.on("foreignAid", async(socket) => {
+            try{
+                var result = await isChallengedByDuck();
+                if(!result.isChallenged){
+                    backEndPlayers[socket.id].numCoins += 2;
+            }
+            }catch(err){
+                console.log("something went wrong")
+            }
+            })
+    
+        // socket.on('disconnect', (reason) => {
+        //     console.log(reason)
+        //     delete backEndPlayers[socket.id]
+        //     io.emit('updatePlayers', backEndPlayers)
+        // })
+        console.log(backEndPlayers)
+    });
+  }
+//   socket.on('disconnect', (reason) => {
+//     console.log(reason)
+//     delete backEndPlayers[socket.id]
+//     io.emit('updatePlayers', backEndPlayers)
+// })
 
 
 
