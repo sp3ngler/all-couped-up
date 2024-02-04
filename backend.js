@@ -13,30 +13,36 @@ const port = 3000;
 // app.use(express.static('public'));
 app.use(express.static('src'));
 
-
 app.get('/', (req, res) => {
     res.sendFile(__dirname + '/src/frontend/tmp.html');
   });
 
-const players = {}
+const backEndPlayers = {}
 
+const capacity = 0
 io.on('connection', (socket) => {
-    console.log('a user connected')
-    players[socket.id] = {
-        x: 500 * Math.random(),
-        y: 500 * Math.random()
-    }
+    console.log('user ' + socket.id + ' connected')
 
-    io.emit('updatePlayers', players)
+    io.emit('updatePlayers', backEndPlayers)
+
+    socket.on('initGame', (username) => {
+        console.log(username)
+        backEndPlayers[socket.id] = {
+            x: 500 * Math.random(),
+            y: 500 * Math.random(),
+            username
+        }
+    })
 
     socket.on('disconnect', (reason) => {
         console.log(reason)
-        delete players[socket.id]
-        io.emit('updatePlayers', players)
+        delete backEndPlayers[socket.id]
+        io.emit('updatePlayers', backEndPlayers)
     })
 
-    console.log(players)
+    console.log(backEndPlayers)
 });
+
 
 
 server.listen(port, () => {
